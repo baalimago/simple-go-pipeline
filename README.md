@@ -15,7 +15,7 @@ By default, it:
   - Checks that the code is formated with [gofumpt](https://github.com/mvdan/gofumpt)
   - Tests with `-race` flag
 
-On exit code, or detected changes, on any of the checks, pipeline will fail.
+On exit code or similar failures, the pipeline will fail.
 
 
 ## Usage
