@@ -3,14 +3,26 @@ name: Go with testcoverage update in README.md
 on:
   workflow_call:
     inputs:
+      go-version:
+        description: "Change this to update go version"
+        default: "1.21"
+        type: string
       gofumpt:
         description: "Use to toggle gofumpt validation step"
         default: true
         type: boolean
+      gofumpt-version:
+        description: "Change this to update gofumpt version"
+        default: "v0.5.0"
+        type: string
       staticcheck:
         description: "Use to toggle staticcheck validation step"
         default: true
         type: boolean
+      staticcheck-version:
+        description: "Change this to update gofumpt version"
+        default: "2023.1.6"
+        type: string
       test:
         description: "Use to toggle the entire test validation step"
         default: true
@@ -27,6 +39,10 @@ on:
         description: "Use to toggle the coverage readme update within the test validation step"
         default: true
         type: boolean
+      test-percentaverage:
+        description: "Use this to change the percentaverage version"
+        default: "v1.0.3"
+        type: string
       # See: https://github.com/orgs/community/discussions/26560 for details to why this is used
       test-readme-coverage-user:
         description: "Use to set the username of the git account which will push the badge update"
@@ -47,7 +63,7 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v4
       with:
-        go-version: '1.21'
+        go-version: "${{ inputs.go-version }}"
 
     - name: Build
       run: go build -v ./...
@@ -60,19 +76,19 @@ jobs:
     - name: Set up Go + testing tools
       uses: actions/setup-go@v4
       with:
-        go-version: '1.21'
+        go-version: "${{ inputs.go-version }}"
     
     - name: Staticcheck
       if: ${{ inputs.staticcheck }} 
       run: |
-        go install honnef.co/go/tools/cmd/staticcheck@2023.1.6
+        go install honnef.co/go/tools/cmd/staticcheck@{{ inputs.staticcheck-version }}
         staticcheck ./...
       shell: bash
 
     - name: Gofumpt
       if: ${{ inputs.gofumpt }}
       run: |
-        go install mvdan.cc/gofumpt@v0.5.0
+        go install mvdan.cc/gofumpt@${{ inputs.gofumpt-version }}
         output=$(gofumpt -l .)
         if [ ! -z "$output" ]; then echo "$output" && exit 1; fi
       shell: bash
