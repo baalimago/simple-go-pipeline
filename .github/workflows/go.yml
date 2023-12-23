@@ -1,15 +1,44 @@
 name: Go with testcoverage update in README.md
 
-
 on:
   workflow_call:
-  push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
-
+    inputs:
+      gofumpt:
+        description: "Use to toggle gofumpt validation step"
+        default: true
+        type: boolean
+      staticcheck:
+        description: "Use to toggle staticcheck validation step"
+        default: true
+        type: boolean
+      test:
+        description: "Use to toggle the entire test validation step"
+        default: true
+        type: boolean
+      test-race:
+        description: "Use to toggle the -race flag within the test validation step"
+        default: true
+        type: boolean
+      test-coverpkg:
+        description: "Use to set -coverpkg flag within the test valdiation step. If left empty, flag will be omitted. See https://go.dev/doc/go1.10#test for more details."
+        default: ""
+        type: string
+      test-readme-coverage:
+        description: "Use to toggle the coverage readme update within the test validation step"
+        default: true
+        type: boolean
+      # See: https://github.com/orgs/community/discussions/26560 for details to why this is used
+      test-readme-coverage-user:
+        description: "Use to set the username of the git account which will push the badge update"
+        default: "github-actions[bot]"
+        type: string
+      test-readme-coverage-email:
+        description: "Use to set the email of the git account which will push the badge update"
+        default: "41898282+github-actions[bot]@users.noreply.github.com"
+        type: string
+      
+  
 jobs:
-
   build:
     runs-on: ubuntu-latest
     steps:
@@ -34,25 +63,48 @@ jobs:
         go-version: '1.21'
     
     - name: Staticcheck
+      if: ${{ input.staticcheck }} 
       run: |
-        go install honnef.co/go/tools/cmd/staticcheck@latest
+        go install honnef.co/go/tools/cmd/staticcheck@2023.1.6
         staticcheck ./...
       shell: bash
 
     - name: Gofumpt
+      if: ${{ input.gofumpt }}
       run: |
-        go install mvdan.cc/gofumpt@latest
+        go install mvdan.cc/gofumpt@v0.5.0
         output=$(gofumpt -l .)
         if [ ! -z "$output" ]; then echo "$output" && exit 1; fi
       shell: bash
 
-    - name: Test 
+    - name: Test
+      if: ${{ input.test }}
       run: |
-        if ! go test -v -race -cover ./... > /tmp/testResult; then
+        raceFlag=""
+        echo "${{ input.test-race }}"
+        if [ "${{ input.test-race }}" == "true" ]; then
+          raceFlag="-race"
+        fi
+        coverPkgInput="${{ input.race-test-coverpkg }}"
+        if [ ! -z "$coverPkgInput" ]; then
+          coverPkg="-coverpkg $coverPkgInput"
+        fi
+
+        testCmd="go test -v $raceFlag $coverPkg -cover ./..."
+
+        if [ "${{ test-readme-coverage }}" != "true" ]; then
+          $testCmd
+          # On exit 1, pipeline will break automatically. So in order to stop automatic coverage
+          # exit 0 here to stop further processing
+          exit 0
+        fi
+
+        # This is done to catch the test results, while still reporting some test failure
+        if ! $testCmd > /tmp/testResult; then
           echo /tmp/testResult
           exit 1
         fi
-        go install github.com/baalimago/percentaverage@latest
+        go install github.com/baalimago/percentaverage@v1.0.3
         perc=$(cat /tmp/testResult | percentaverage -r)
         perc_rounded=${perc%%.*}
         if [ $perc_rounded -ge 80 ]; then
@@ -65,13 +117,13 @@ jobs:
           color="😠👎"
         fi
 
-        sed -i "s/Test coverage: .*/Test coverage: $perc% $rating/" README.md
+        # Note that you need to have some line starting with "Test coverage:" for this to work
+        sed -i "s/Test coverage:.*/Test coverage: $perc% $rating/" README.md
 
         git add README.md
-        # I'm not too sure about this one
-        git config --global user.email "actions@github.com"
-        git config --global user.name "Github Actions"
-        git commit -m "GithubActions: Updated testcoverage"
+        git config --global user.email "${{ input.test-readme-coverage-email }}"
+        git config --global user.name "${{ input.test-readme-coverage-user }}"
+        git commit -m "Github Action: Updated testcoverage"
         git push
       shell: bash
 
