@@ -39,8 +39,8 @@ on:
         description: "Use to toggle the coverage readme update within the test validation step"
         default: true
         type: boolean
-      test-percentaverage:
-        description: "Use this to change the percentaverage version"
+      percentaverage-version:
+        description: "Change this to update percentaverage version"
         default: "v1.0.3"
         type: string
       # See: https://github.com/orgs/community/discussions/26560 for details to why this is used
@@ -81,7 +81,7 @@ jobs:
     - name: Staticcheck
       if: ${{ inputs.staticcheck }} 
       run: |
-        go install honnef.co/go/tools/cmd/staticcheck@{{ inputs.staticcheck-version }}
+        go install honnef.co/go/tools/cmd/staticcheck@${{ inputs.staticcheck-version }}
         staticcheck ./...
       shell: bash
 
@@ -120,7 +120,7 @@ jobs:
           echo /tmp/testResult
           exit 1
         fi
-        go install github.com/baalimago/percentaverage@v1.0.3
+        go install github.com/baalimago/percentaverage@${{ inputs.percentaverage-version }} 
         perc=$(cat /tmp/testResult | percentaverage -r)
         perc_rounded=${perc%%.*}
         if [ $perc_rounded -ge 80 ]; then
