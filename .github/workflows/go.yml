@@ -63,14 +63,14 @@ jobs:
         go-version: '1.21'
     
     - name: Staticcheck
-      if: ${{ input.staticcheck }} 
+      if: ${{ inputs.staticcheck }} 
       run: |
         go install honnef.co/go/tools/cmd/staticcheck@2023.1.6
         staticcheck ./...
       shell: bash
 
     - name: Gofumpt
-      if: ${{ input.gofumpt }}
+      if: ${{ inputs.gofumpt }}
       run: |
         go install mvdan.cc/gofumpt@v0.5.0
         output=$(gofumpt -l .)
@@ -78,21 +78,21 @@ jobs:
       shell: bash
 
     - name: Test
-      if: ${{ input.test }}
+      if: ${{ inputs.test }}
       run: |
         raceFlag=""
-        echo "${{ input.test-race }}"
-        if [ "${{ input.test-race }}" == "true" ]; then
+        echo "${{ inputs.test-race }}"
+        if [ "${{ inputs.test-race }}" == "true" ]; then
           raceFlag="-race"
         fi
-        coverPkgInput="${{ input.race-test-coverpkg }}"
+        coverPkgInput="${{ inputs.race-test-coverpkg }}"
         if [ ! -z "$coverPkgInput" ]; then
           coverPkg="-coverpkg $coverPkgInput"
         fi
 
         testCmd="go test -v $raceFlag $coverPkg -cover ./..."
 
-        if [ "${{ test-readme-coverage }}" != "true" ]; then
+        if [ "${{ inputs.test-readme-coverage }}" != "true" ]; then
           $testCmd
           # On exit 1, pipeline will break automatically. So in order to stop automatic coverage
           # exit 0 here to stop further processing
@@ -121,8 +121,8 @@ jobs:
         sed -i "s/Test coverage:.*/Test coverage: $perc% $rating/" README.md
 
         git add README.md
-        git config --global user.email "${{ input.test-readme-coverage-email }}"
-        git config --global user.name "${{ input.test-readme-coverage-user }}"
+        git config --global user.email "${{ inputs.test-readme-coverage-email }}"
+        git config --global user.name "${{ inputs.test-readme-coverage-user }}"
         git commit -m "Github Action: Updated testcoverage"
         git push
       shell: bash
