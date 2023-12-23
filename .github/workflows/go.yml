@@ -97,7 +97,6 @@ jobs:
       if: ${{ inputs.test }}
       run: |
         raceFlag=""
-        echo "${{ inputs.test-race }}"
         if [ "${{ inputs.test-race }}" == "true" ]; then
           raceFlag="-race"
         fi
@@ -136,13 +135,17 @@ jobs:
         # Note that you need to have some line starting with "Test coverage:" for this to work
         sed -i "s/Test coverage:.*/Test coverage: $perc% $rating/" README.md
 
+        if [ -z "$(git status --porcelain)" ]; then
+          echo "Test coverage unchanged"
+          exit 1
+        fi
+        
         git add README.md
         git config --global user.email "${{ inputs.test-readme-coverage-email }}"
         git config --global user.name "${{ inputs.test-readme-coverage-user }}"
         git commit -m "Github Action: Updated testcoverage"
-        if ! git push; then
-          echo "Test coverage hasn't changed, nothing to push"
-        fi
+        git push
+  
       shell: bash
 
     
