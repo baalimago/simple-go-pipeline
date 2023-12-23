@@ -39,6 +39,9 @@ jobs:
 
 Done!
 
+[See here](https://github.com/baalimago/simple-go-pipeline/blob/main/.github/workflows/go.yml) for the input variables you should change to enable/disable the different aspects of the validation.
+For example, `jobs.call-workflow.with.staticcheck: false` (in proper yml indention), would disable the staticcheck.
+
 ## Test coverage readme
 In order to get test coverage updated automatically updated into your readme, do like this:
 1. __Carefully review your Gitlab Actions workflows, including this repo..!__
