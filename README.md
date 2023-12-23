@@ -1,2 +1,49 @@
-# simple-go-pipeline
+# Simple Go Pipeline
 The simple go pipeline provides modular validation, test-coverage and releases.
+It has minimal amounts of dependencies, is fully customizable and gives test coverage in `README.md` without any third party websites.
+Use it, or fork it and hack it! 
+
+Examples:
+  - [Pipeline](https://github.com/baalimago/percentaverage/actions/runs/7308650137)
+  - Test coverage printout:
+
+![Test coverage printout](./img/test-coverage-update.md.png)
+
+By default, it:
+  - Builds the application
+  - Checks that the code is adheres to [staticcheck](https://staticcheck.dev/) linting
+  - Checks that the code is formated with [gofumpt](https://github.com/mvdan/gofumpt)
+  - Tests with `-race` flag
+
+On exit code, or detected changes, on any of the checks, pipeline will fail.
+
+
+## Usage
+Create a file `<github-repo>/.github/workflows/go.yml` with this in it: 
+
+```yaml
+name: Simple Go Pipeline
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  call-workflow:
+    uses: baalimago/simple-go-pipeline/.github/workflows/go.yml@main
+    with:
+        test-readme-coverage: false
+```
+
+Done!
+
+## Test coverage readme
+In order to get test coverage updated automatically updated into your readme, do like this:
+1. __Carefully review your Gitlab Actions workflows, including this repo..!__
+1. Go to `https://github.com/<your-account>/<your-project>/settings/actions`
+1. Set `Workflow Permissions` to `Read and write perimssions` 
+1. Hit save
+1. Somewhere within your `README.md`, add the line `Test coverage:`
+1. Remove `test-readme-coverage: false` from your `go.yml` github actions workflow specification (it's true by default)
