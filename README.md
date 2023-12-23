@@ -1,5 +1,5 @@
 # Simple Go Pipeline
-The simple go pipeline provides modular validation, test-coverage and releases.
+The simple go pipeline provides modular validation and test-coverage.
 It has minimal amounts of dependencies, is fully customizable and gives test coverage in `README.md` without any third party websites.
 Use it, or fork it and hack it! 
 
