@@ -116,7 +116,7 @@ jobs:
 
         # This is done to catch the test results, while still reporting some test failure
         if ! $testCmd > /tmp/testResult; then
-          echo /tmp/testResult
+          cat /tmp/testResult
           exit 1
         fi
         go install github.com/baalimago/percentaverage@${{ inputs.percentaverage-version }} 
