@@ -41,7 +41,7 @@ on:
         type: boolean
       percentaverage-version:
         description: "Change this to update percentaverage version"
-        default: "v1.0.3"
+        default: "v1.0.4"
         type: string
       # See: https://github.com/orgs/community/discussions/26560 for details to why this is used
       test-readme-coverage-user:
