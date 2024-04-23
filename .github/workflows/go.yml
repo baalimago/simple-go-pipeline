@@ -41,7 +41,7 @@ on:
         type: boolean
       percentaverage-version:
         description: "Change this to update percentaverage version"
-        default: "v1.0.4"
+        default: "v1.0.5"
         type: string
       # See: https://github.com/orgs/community/discussions/26560 for details to why this is used
       test-readme-coverage-user:
@@ -120,7 +120,7 @@ jobs:
           exit 1
         fi
         go install github.com/baalimago/percentaverage@${{ inputs.percentaverage-version }} 
-        perc=$(cat /tmp/testResult | percentaverage -r)
+        perc=$(cat /tmp/testResult | percentaverage -r -round)
         perc_rounded=${perc%%.*}
         if [ $perc_rounded -ge 80 ]; then
           rating="😍👌"
