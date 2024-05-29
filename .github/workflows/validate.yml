@@ -1,11 +1,11 @@
-name: Go with testcoverage update in README.md
+name: Validate + update in README.md
 
 on:
   workflow_call:
     inputs:
       go-version:
         description: "Change this to update go version"
-        default: "1.21"
+        default: "1.22"
         type: string
       gofumpt:
         description: "Use to toggle gofumpt validation step"
