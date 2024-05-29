@@ -1,0 +1,69 @@
+name: Release to ios, windows and linux
+
+on:
+  workflow_call:
+    inputs:
+      go-version:
+        description: "Change this to update go version"
+        default: "1.22"
+        type: string
+      project-name:
+        description: "Name of the project, will be the rootname of binary"
+        type: string
+      branch:
+        description: "Branch to which the release should target"
+        type: string
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: ["darwin", "linux", "windows"]
+        arch: ["amd64", "arm64", "386"]
+        exclude:
+          - os: "darwin"
+            arch: "386"
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: "${{ inputs.go-version }}"
+    - name: Build binaries
+      run: |
+        GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} go build -o ${{ inputs.project-name }}_${{ matrix.os }}-${{ matrix.arch }}_${GITHUB_REF#refs/tags/}
+    - name: Create release
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        curl -L \
+          -X POST \
+          -H "Accept: application/vnd.github+json" \
+          -H "Authorization: Bearer $GITHUB_TOKEN" \
+          -H "X-GitHub-Api-Version: 2022-11-28" \
+          https://api.github.com/repos/${{ github.repository}}/releases \
+          -d "{\"tag_name\":\"$GITHUB_REF_NAME\",\"target_commitish\":\"${{ inputs.branch }}\",\"name\":\"$GITHUB_REF_NAME\",\"draft\":false,\"prerelease\":false,\"generate_release_notes\":true}"
+    - name: Upload binaries to release
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        if ! release_id=$(curl -L \
+          -s \
+          -H "Accept: application/vnd.github+json" \
+          -H "Authorization: Bearer $GITHUB_TOKEN" \
+          -H "X-GitHub-Api-Version: 2022-11-28" \
+          https://api.github.com/repos/${{ github.repository}}/releases/latest | jq -r '.id'); then
+          echo $release_id
+          exit 1
+        fi
+        filename="${{ inputs.project-name }}_${{ matrix.os }}-${{ matrix.arch }}_${GITHUB_REF#refs/tags/}"
+        echo "$release_id"
+        curl -L \
+          -X POST \
+          -H "Accept: application/vnd.github+json" \
+          -H "Authorization: Bearer $GITHUB_TOKEN" \
+          -H "X-GitHub-Api-Version: 2022-11-28" \
+          -H "Content-Type: application/octet-stream" \
+          "https://uploads.github.com/repos/${{ github.repository}}/releases/$release_id/assets?name=$filename" \
+          --data-binary "@$filename"
