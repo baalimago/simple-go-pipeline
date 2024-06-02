@@ -20,7 +20,7 @@ jobs:
       # This is needed if the binary doesn't compile to some OS's by design 
       fail-fast: false
       matrix:
-        os: ["darwin", "linux", "windows"]
+        os: ["darwin", "linux"]
         arch: ["amd64", "arm64", "386"]
         exclude:
           - os: "darwin"
