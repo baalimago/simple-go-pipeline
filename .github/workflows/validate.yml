@@ -96,6 +96,7 @@ jobs:
     - name: Test
       if: ${{ inputs.test }}
       run: |
+        env
         raceFlag=""
         if [ "${{ inputs.test-race }}" == "true" ]; then
           raceFlag="-race"
