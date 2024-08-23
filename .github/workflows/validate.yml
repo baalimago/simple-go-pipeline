@@ -120,6 +120,10 @@ jobs:
           cat /tmp/testResult
           exit 1
         fi
+        # Exit early on pullrequests, as we dont want it to update testcoverage then
+        if [ $GITHUB_EVENT_NAME == "pull_request" ]; then
+          exit 0
+        fi
         go install github.com/baalimago/percentaverage@${{ inputs.percentaverage-version }} 
         perc=$(cat /tmp/testResult | percentaverage -r -round)
         perc_rounded=${perc%%.*}
