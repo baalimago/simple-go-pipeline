@@ -33,7 +33,7 @@ on:
 
 jobs:
   call-workflow:
-    uses: baalimago/simple-go-pipeline/.github/workflows/go.yml@v0.1.3
+    uses: baalimago/simple-go-pipeline/.github/workflows/go.yml@v0.2.8
     with:
         test-readme-coverage: false
 ```
