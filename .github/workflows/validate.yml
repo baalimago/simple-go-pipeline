@@ -52,104 +52,101 @@ on:
         description: "Use to set the email of the git account which will push the badge update"
         default: "41898282+github-actions[bot]@users.noreply.github.com"
         type: string
-      
-  
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
-    - name: Set up Go
-      uses: actions/setup-go@v4
-      with:
-        go-version: "${{ inputs.go-version }}"
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: "${{ inputs.go-version }}"
 
-    - name: Build
-      run: go build -v ./...
+      - name: Build
+        run: go build -v ./...
 
   validate:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
-    - name: Set up Go + testing tools
-      uses: actions/setup-go@v4
-      with:
-        go-version: "${{ inputs.go-version }}"
-    
-    - name: Staticcheck
-      if: ${{ inputs.staticcheck }} 
-      run: |
-        go install honnef.co/go/tools/cmd/staticcheck@${{ inputs.staticcheck-version }}
-        staticcheck ./...
-      shell: bash
+      - name: Set up Go + testing tools
+        uses: actions/setup-go@v4
+        with:
+          go-version: "${{ inputs.go-version }}"
 
-    - name: Gofumpt
-      if: ${{ inputs.gofumpt }}
-      run: |
-        go install mvdan.cc/gofumpt@${{ inputs.gofumpt-version }}
-        output=$(gofumpt -l .)
-        if [ ! -z "$output" ]; then echo "$output" && exit 1; fi
-      shell: bash
+      - name: Staticcheck
+        if: ${{ inputs.staticcheck }}
+        run: |
+          go install honnef.co/go/tools/cmd/staticcheck@${{ inputs.staticcheck-version }}
+          staticcheck ./...
+        shell: bash
 
-    - name: Test
-      if: ${{ inputs.test }}
-      run: |
-        raceFlag=""
-        if [ "${{ inputs.test-race }}" == "true" ]; then
-          raceFlag="-race"
-        fi
-        coverPkgInput="${{ inputs.race-test-coverpkg }}"
-        if [ ! -z "$coverPkgInput" ]; then
-          coverPkg="-coverpkg $coverPkgInput"
-        fi
+      - name: Gofumpt
+        if: ${{ inputs.gofumpt }}
+        run: |
+          go install mvdan.cc/gofumpt@${{ inputs.gofumpt-version }}
+          output=$(gofumpt -l .)
+          if [ ! -z "$output" ]; then echo "$output" && exit 1; fi
+        shell: bash
 
-        testCmd="go test -v $raceFlag $coverPkg -cover ./..."
+      - name: Test
+        if: ${{ inputs.test }}
+        run: |
+          raceFlag=""
+          if [ "${{ inputs.test-race }}" == "true" ]; then
+            raceFlag="-race"
+          fi
+          coverPkgInput="${{ inputs.race-test-coverpkg }}"
+          if [ ! -z "$coverPkgInput" ]; then
+            coverPkg="-coverpkg $coverPkgInput"
+          fi
 
-        if [ "${{ inputs.test-readme-coverage }}" != "true" ]; then
-          $testCmd
-          # On exit 1, pipeline will break automatically. So in order to stop automatic coverage
-          # exit 0 here to stop further processing
-          exit 0
-        fi
+          testCmd="go test -v $raceFlag $coverPkg -cover ./..."
 
-        # This is done to catch the test results, while still reporting some test failure
-        if ! $testCmd > /tmp/testResult; then
-          cat /tmp/testResult
-          exit 1
-        fi
-        # Exit early on pullrequests, as we dont want it to update testcoverage then
-        if [ $GITHUB_EVENT_NAME == "pull_request" ]; then
-          exit 0
-        fi
-        go install github.com/baalimago/percentaverage@${{ inputs.percentaverage-version }} 
-        perc=$(cat /tmp/testResult | percentaverage -r -round)
-        perc_rounded=${perc%%.*}
-        if [ $perc_rounded -ge 80 ]; then
-          rating="😍👌"
-        elif [ $perc_rounded -ge 50 ]; then
-          rating="😌👏"
-        elif [ $perc_rounded -ge 20 ]; then
-          rating="😒👍"
-        else
-          color="😠👎"
-        fi
+          if [ "${{ inputs.test-readme-coverage }}" != "true" ]; then
+            $testCmd
+            # On exit 1, pipeline will break automatically. So in order to stop automatic coverage
+            # exit 0 here to stop further processing
+            exit 0
+          fi
 
-        # Note that you need to have some line starting with "Test coverage:" for this to work
-        sed -i "s/Test coverage:.*/Test coverage: $perc% $rating/" README.md
+          # This is done to catch the test results, while still reporting some test failure
+          if ! $testCmd > /tmp/testResult; then
+            cat /tmp/testResult
+            exit 1
+          fi
+          # Exit early on pullrequests, as we dont want it to update testcoverage then
+          if [ $GITHUB_EVENT_NAME == "pull_request" ]; then
+            exit 0
+          fi
+          go install github.com/baalimago/percentaverage@${{ inputs.percentaverage-version }} 
+          perc=$(cat /tmp/testResult | percentaverage -r -round)
+          perc_rounded=${perc%%.*}
+          if [ $perc_rounded -ge 80 ]; then
+            rating="😍👌"
+          elif [ $perc_rounded -ge 50 ]; then
+            rating="😌👏"
+          elif [ $perc_rounded -ge 20 ]; then
+            rating="😒👍"
+          else
+            color="😠👎"
+          fi
 
-        if [ -z "$(git status --porcelain)" ]; then
-          echo "Test coverage unchanged"
-          exit 0
-        fi
-        
-        git add README.md
-        git config --global user.email "${{ inputs.test-readme-coverage-email }}"
-        git config --global user.name "${{ inputs.test-readme-coverage-user }}"
-        git commit -m "Github Action: Updated testcoverage"
-        git push
-  
-      shell: bash
+          # Note that you need to have some line starting with "Test coverage:" for this to work
+          sed -i "s/Test coverage:.*/Test coverage: $perc% $rating/" README.md
 
-    
+          if [ -z "$(git status --porcelain)" ]; then
+            echo "Test coverage unchanged"
+            exit 0
+          fi
+
+          git add README.md
+          git config --global user.email "${{ inputs.test-readme-coverage-email }}"
+          git config --global user.name "${{ inputs.test-readme-coverage-user }}"
+          git commit -m "Github Action: Updated testcoverage"
+          git push
+
+        shell: bash
