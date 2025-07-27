@@ -52,6 +52,10 @@ on:
         description: "Use to set the email of the git account which will push the badge update"
         default: "41898282+github-actions[bot]@users.noreply.github.com"
         type: string
+      prerun-step-cmd:
+        description: Command to run before other tests are run
+        default: ""
+        type: string
 
 jobs:
   build:
@@ -76,6 +80,11 @@ jobs:
         uses: actions/setup-go@v4
         with:
           go-version: "${{ inputs.go-version }}"
+
+      - name: Prerun
+        shell: bash
+        if: ${{ inputs.prerun-step-cmd }}
+        run: ${{ inputs.prerun-step-cmd }}
 
       - name: Staticcheck
         if: ${{ inputs.staticcheck }}
