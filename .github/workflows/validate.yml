@@ -111,7 +111,7 @@ jobs:
             coverPkg="-coverpkg $coverPkgInput"
           fi
 
-          testCmd="go test -v $raceFlag $coverPkg -cover ./..."
+          testCmd="go test $raceFlag $coverPkg -cover ./..."
 
           if [ "${{ inputs.test-readme-coverage }}" != "true" ]; then
             $testCmd
