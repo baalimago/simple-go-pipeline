@@ -89,15 +89,13 @@ jobs:
       - name: Staticcheck
         if: ${{ inputs.staticcheck }}
         run: |
-          go install honnef.co/go/tools/cmd/staticcheck@${{ inputs.staticcheck-version }}
-          staticcheck ./...
+          go run honnef.co/go/tools/cmd/staticcheck@${{ inputs.staticcheck-version }} ./...
         shell: bash
 
       - name: Gofumpt
         if: ${{ inputs.gofumpt }}
         run: |
-          go install mvdan.cc/gofumpt@${{ inputs.gofumpt-version }}
-          output=$(gofumpt -l .)
+          output=$(go run mvdan.cc/gofumpt@${{ inputs.gofumpt-version }} -l .)
           if [ ! -z "$output" ]; then echo "$output" && exit 1; fi
         shell: bash
 
