@@ -56,28 +56,41 @@ on:
         description: Command to run before other tests are run
         default: ""
         type: string
+      build-command:
+        description: "Shell command building the project in the build job; default: go build -v ./..."
+        default: "go build -v ./..."
+        type: string
+      test-command:
+        description: "Shell command running the test suite in the validate job; when empty, the default go test construction with the race and coverpkg flags runs"
+        default: ""
+        type: string
+      coverage-command:
+        description: "Shell command printing the coverage percentage on stdout; default: percentaverage over the captured test output"
+        default: "cat /tmp/testResult | percentaverage -r -round"
+        type: string
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Set up Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@0aaccfd150d50ccaeb58ebd88d36e91967a5f35b # v5.4.0
         with:
           go-version: "${{ inputs.go-version }}"
 
       - name: Build
-        run: go build -v ./...
+        shell: bash
+        run: ${{ inputs.build-command }}
 
   validate:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Set up Go + testing tools
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@0aaccfd150d50ccaeb58ebd88d36e91967a5f35b # v5.4.0
         with:
           go-version: "${{ inputs.go-version }}"
 
@@ -102,16 +115,20 @@ jobs:
       - name: Test
         if: ${{ inputs.test }}
         run: |
-          raceFlag=""
-          if [ "${{ inputs.test-race }}" == "true" ]; then
-            raceFlag="-race"
-          fi
-          coverPkgInput="${{ inputs.race-test-coverpkg }}"
-          if [ ! -z "$coverPkgInput" ]; then
-            coverPkg="-coverpkg $coverPkgInput"
-          fi
+          if [[ -n "${{ inputs.test-command }}" ]]; then
+            testCmd="${{ inputs.test-command }}"
+          else
+            raceFlag=""
+            if [ "${{ inputs.test-race }}" == "true" ]; then
+              raceFlag="-race"
+            fi
+            coverPkgInput="${{ inputs.test-coverpkg }}"
+            if [ ! -z "$coverPkgInput" ]; then
+              coverPkg="-coverpkg $coverPkgInput"
+            fi
 
-          testCmd="go test $raceFlag $coverPkg -cover ./..."
+            testCmd="go test $raceFlag $coverPkg -cover ./..."
+          fi
 
           if [ "${{ inputs.test-readme-coverage }}" != "true" ]; then
             $testCmd
@@ -130,7 +147,7 @@ jobs:
             exit 0
           fi
           go install github.com/baalimago/percentaverage@${{ inputs.percentaverage-version }} 
-          perc=$(cat /tmp/testResult | percentaverage -r -round)
+          perc=$(${{ inputs.coverage-command }})
           perc_rounded=${perc%%.*}
           if [ $perc_rounded -ge 80 ]; then
             rating="😍👌"
@@ -139,7 +156,7 @@ jobs:
           elif [ $perc_rounded -ge 20 ]; then
             rating="😒👍"
           else
-            color="😠👎"
+            rating="😠👎"
           fi
 
           # Note that you need to have some line starting with "Test coverage:" for this to work
