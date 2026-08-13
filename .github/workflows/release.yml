@@ -130,15 +130,16 @@ jobs:
           TARGET_BINARY: ${{ steps.target.outputs.target_binary }}
           RELEASE_VERSION: ${{ github.ref_name }}
         run: |
-          if [[ -n "${{ inputs.native-build-command }}" ]]; then
-            ${{ inputs.native-build-command }}
-          else
+          if [[ -z "${{ inputs.native-build-command }}" ]]; then
             ldflags="-s -w"
             if [[ -n "${{ inputs.version-var }}" ]]; then
               ldflags="$ldflags -X '${{ inputs.version-var }}=${{ github.ref_name }}'"
             fi
             GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} \
               go build -trimpath -ldflags "$ldflags" -o "${{ steps.target.outputs.target_binary }}" .
+          else
+            :
+            ${{ inputs.native-build-command }}
           fi
       - name: Inspect runtime dependencies
         if: ${{ inputs.dependency-check-command != '' }}
@@ -158,10 +159,11 @@ jobs:
           TARGET_BINARY: ${{ steps.target.outputs.target_binary }}
           RELEASE_VERSION: ${{ github.ref_name }}
         run: |
-          if [[ -n "${{ inputs.smoke-command }}" ]]; then
-            ${{ inputs.smoke-command }}
-          else
+          if [[ -z "${{ inputs.smoke-command }}" ]]; then
             ./"${{ steps.target.outputs.target_binary }}" --version
+          else
+            :
+            ${{ inputs.smoke-command }}
           fi
       - name: Upload artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
@@ -192,10 +194,11 @@ jobs:
       - name: Create checksums
         shell: bash
         run: |
-          if [[ -n "${{ inputs.checksum-command }}" ]]; then
-            ${{ inputs.checksum-command }} dist/* > dist/SHA256SUMS
-          else
+          if [[ -z "${{ inputs.checksum-command }}" ]]; then
             (cd dist && sha256sum * | grep -v '  SHA256SUMS$' | sort -k2) > dist/SHA256SUMS
+          else
+            :
+            ${{ inputs.checksum-command }} dist/* > dist/SHA256SUMS
           fi
       - name: Classify release kind
         id: classify
