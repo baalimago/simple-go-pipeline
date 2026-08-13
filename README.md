@@ -56,6 +56,9 @@ prerelease or build metadata). A tag with a prerelease identifier such as
 creates a normal release. Any other tag fails the workflow before a build
 starts, so no release is ever created from a non-semver tag.
 
+Release notes for a stable release cover changes since the previous stable
+release. Release notes for a prerelease use GitHub's default range.
+
 - **Pure-Go callers** omit the native inputs. The workflow cross-compiles the
   default matrix (darwin and linux on amd64, arm64, and 386, excluding
   darwin-386) on ubuntu-latest with `go build`, then creates one release.

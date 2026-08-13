@@ -220,7 +220,20 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          extra_args=()
+          if [[ "${{ steps.classify.outputs.prerelease }}" != "true" ]]; then
+            start_tag="$(
+              gh release list --exclude-drafts --exclude-pre-releases \
+                --limit 1 --order desc --json tagName \
+                --jq '.[0].tagName // empty'
+            )"
+            if [[ -n "$start_tag" ]]; then
+              extra_args+=(--notes-start-tag "$start_tag")
+            fi
+          fi
+
           gh release create "$GITHUB_REF_NAME" dist/* \
             --target "${{ inputs.branch }}" \
             --generate-notes \
+            "${extra_args[@]}" \
             ${{ steps.classify.outputs.prerelease == 'true' && '--prerelease' || '' }}
