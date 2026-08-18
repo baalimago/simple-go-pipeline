@@ -56,6 +56,11 @@ prerelease or build metadata). A tag with a prerelease identifier such as
 creates a normal release. Any other tag fails the workflow before a build
 starts, so no release is ever created from a non-semver tag.
 
+If the commit the tag points to has `no-release` (case-insensitive) in its
+commit message, the workflow skips every build and creates no release. This is
+useful for tags that exist only as library or test versions, for example when
+trying `go install` against a tagged commit without publishing a release.
+
 Release notes for a stable release cover changes since the previous stable
 release. Release notes for a prerelease use GitHub's default range.
 
