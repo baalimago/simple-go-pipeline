@@ -32,8 +32,8 @@ on:
         default: true
         type: boolean
       test-coverpkg:
-        description: "Use to set -coverpkg flag within the test valdiation step. If left empty, flag will be omitted. See https://go.dev/doc/go1.10#test for more details."
-        default: ""
+        description: "Use to set -coverpkg flag within the test validation step. If left empty, the flag is omitted and each package is instrumented by its own tests only. See https://go.dev/doc/go1.10#test for more details."
+        default: "./..."
         type: string
       test-readme-coverage:
         description: "Use to toggle the coverage readme update within the test validation step"
@@ -61,12 +61,12 @@ on:
         default: "go build -v ./..."
         type: string
       test-command:
-        description: "Shell command running the test suite in the validate job; when empty, the default go test construction with the race and coverpkg flags runs"
+        description: "Shell command running the test suite in the validate job; when empty, the default go test construction with the race and coverpkg flags runs. The command must write the coverage profile to /tmp/cover.out when the default coverage-command is kept"
         default: ""
         type: string
       coverage-command:
-        description: "Shell command printing the coverage percentage on stdout; default: percentaverage over the captured test output"
-        default: "cat /tmp/testResult | percentaverage -r -round"
+        description: "Shell command printing the coverage percentage on stdout; default: the aggregate of /tmp/cover.out, which the default test command writes"
+        default: "go tool cover -func /tmp/cover.out | tail -1 | grep -oE '[0-9]+\\.[0-9]+'"
         type: string
 
 jobs:
@@ -127,7 +127,7 @@ jobs:
               coverPkg="-coverpkg $coverPkgInput"
             fi
 
-            testCmd="go test $raceFlag $coverPkg -cover ./..."
+            testCmd="go test $raceFlag $coverPkg -coverprofile /tmp/cover.out ./..."
           fi
 
           if [ "${{ inputs.test-readme-coverage }}" != "true" ]; then
@@ -146,7 +146,9 @@ jobs:
           if [ $GITHUB_EVENT_NAME == "pull_request" ]; then
             exit 0
           fi
-          go install github.com/baalimago/percentaverage@${{ inputs.percentaverage-version }} 
+          if [[ "${{ inputs.coverage-command }}" == *percentaverage* ]]; then
+            go install github.com/baalimago/percentaverage@${{ inputs.percentaverage-version }}
+          fi
           perc=$(${{ inputs.coverage-command }})
           perc_rounded=${perc%%.*}
           if [ $perc_rounded -ge 80 ]; then

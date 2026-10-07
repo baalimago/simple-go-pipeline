@@ -15,9 +15,16 @@ By default, it:
   - Checks that the code is adheres to [staticcheck](https://staticcheck.dev/) linting
   - Checks that the code is formated with [gofumpt](https://github.com/mvdan/gofumpt)
   - Tests with `-race` flag
+  - Reports the aggregate coverage of the `-coverpkg ./...` profile in `README.md`
 
 On exit code or similar failures, the pipeline will fail.
 
+The default coverage number is the aggregate that `go tool cover -func` prints for a
+single `-coverpkg ./...` profile. This is the number that awesome-go and most coverage
+badges quote, and it weighs big packages as much as small ones. To get the old unweighted
+mean over packages instead, set
+`coverage-command: "cat /tmp/testResult | percentaverage -r -round"` and
+`test-command: ""` in the caller.
 
 ## Usage
 Create a file `<github-repo>/.github/workflows/go.yml` with this in it: 
