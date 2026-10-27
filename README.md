@@ -119,6 +119,17 @@ dependency, and smoke commands are target-aware. The version injected through
 `version-var` is the tag name verbatim; callers strip the `v` when it belongs
 in the linker variable.
 
+Caller commands run as shell text through `eval`, so they keep their own
+quotes, pipes, conditionals, and multi-line blocks. This command is valid:
+
+```yaml
+      native-build-command: >-
+        CGO_ENABLED=0 GOOS="$TARGET_OS" GOARCH="$TARGET_ARCH"
+        go build -trimpath
+        -ldflags "-s -w -X 'example.com/tool/internal/version.BuildVersion=$RELEASE_VERSION'"
+        -o "$TARGET_BINARY" .
+```
+
 One assembly job creates one release after every target succeeded, so no
 matrix job can race to create a release or attach assets to an unrelated
 latest release. The checksum file covers the exact uploaded bytes: it is

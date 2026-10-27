@@ -142,53 +142,55 @@ jobs:
         if: ${{ inputs.native-setup-command != '' }}
         shell: bash
         env:
+          NATIVE_SETUP_COMMAND: ${{ inputs.native-setup-command }}
           TARGET_OS: ${{ matrix.os }}
           TARGET_ARCH: ${{ matrix.arch }}
           TARGET_BINARY: ${{ steps.target.outputs.target_binary }}
           RELEASE_VERSION: ${{ github.ref_name }}
-        run: ${{ inputs.native-setup-command }}
+        run: eval "$NATIVE_SETUP_COMMAND"
       - name: Build
         shell: bash
         env:
+          NATIVE_BUILD_COMMAND: ${{ inputs.native-build-command }}
           TARGET_OS: ${{ matrix.os }}
           TARGET_ARCH: ${{ matrix.arch }}
           TARGET_BINARY: ${{ steps.target.outputs.target_binary }}
           RELEASE_VERSION: ${{ github.ref_name }}
         run: |
-          if [[ -z "${{ inputs.native-build-command }}" ]]; then
+          if [[ -z "$NATIVE_BUILD_COMMAND" ]]; then
             ldflags="-s -w"
             if [[ -n "${{ inputs.version-var }}" ]]; then
               ldflags="$ldflags -X '${{ inputs.version-var }}=${{ github.ref_name }}'"
             fi
-            GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} \
-              go build -trimpath -ldflags "$ldflags" -o "${{ steps.target.outputs.target_binary }}" .
+            GOOS="$TARGET_OS" GOARCH="$TARGET_ARCH" \
+              go build -trimpath -ldflags "$ldflags" -o "$TARGET_BINARY" .
           else
-            :
-            ${{ inputs.native-build-command }}
+            eval "$NATIVE_BUILD_COMMAND"
           fi
       - name: Inspect runtime dependencies
         if: ${{ inputs.dependency-check-command != '' }}
         shell: bash
         env:
+          DEPENDENCY_CHECK_COMMAND: ${{ inputs.dependency-check-command }}
           TARGET_OS: ${{ matrix.os }}
           TARGET_ARCH: ${{ matrix.arch }}
           TARGET_BINARY: ${{ steps.target.outputs.target_binary }}
           RELEASE_VERSION: ${{ github.ref_name }}
-        run: ${{ inputs.dependency-check-command }}
+        run: eval "$DEPENDENCY_CHECK_COMMAND"
       - name: Smoke test
         if: ${{ inputs.smoke-command != '' || inputs.native-build-command != '' }}
         shell: bash
         env:
+          SMOKE_COMMAND: ${{ inputs.smoke-command }}
           TARGET_OS: ${{ matrix.os }}
           TARGET_ARCH: ${{ matrix.arch }}
           TARGET_BINARY: ${{ steps.target.outputs.target_binary }}
           RELEASE_VERSION: ${{ github.ref_name }}
         run: |
-          if [[ -z "${{ inputs.smoke-command }}" ]]; then
-            ./"${{ steps.target.outputs.target_binary }}" --version
+          if [[ -z "$SMOKE_COMMAND" ]]; then
+            ./"$TARGET_BINARY" --version
           else
-            :
-            ${{ inputs.smoke-command }}
+            eval "$SMOKE_COMMAND"
           fi
       - name: Upload artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
@@ -219,12 +221,13 @@ jobs:
           cp "${{ inputs.notice-file }}" dist/
       - name: Create checksums
         shell: bash
+        env:
+          CHECKSUM_COMMAND: ${{ inputs.checksum-command }}
         run: |
-          if [[ -z "${{ inputs.checksum-command }}" ]]; then
+          if [[ -z "$CHECKSUM_COMMAND" ]]; then
             (cd dist && sha256sum * | grep -v '  SHA256SUMS$' | sort -k2) > dist/SHA256SUMS
           else
-            :
-            ${{ inputs.checksum-command }} dist/* > dist/SHA256SUMS
+            eval "$CHECKSUM_COMMAND" dist/* > dist/SHA256SUMS
           fi
       - name: Classify release kind
         id: classify
